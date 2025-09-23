@@ -1,5 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const apiLoginUser = (email: string) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      try {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const user = users.find((u: any) => u.email === email);
+        if (user) {
+          localStorage.setItem('loggedInUser', JSON.stringify(user));
+          resolve({ success: true, user });
+        } else {
+          reject(new Error('Invalid email or password.'));
+        }
+      } catch (error) {
+        reject(error);
+      }
+    }, 500);
   });
 };
 
@@ -8,6 +25,8 @@ const Login = () => {
   const [password, setPassword] = useState(''); // For UI purposes
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+
 
   return (
     <div className="row justify-content-center">
