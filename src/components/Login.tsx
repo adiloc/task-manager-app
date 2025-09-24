@@ -16,6 +16,13 @@ interface User {
   lname: string;
 }
 
+const api = {
+  getTasks: (userId: string): Promise<Task[]> => new Promise(() => {
+    setTimeout(() => {
+      const allTasks: Task[] = JSON.parse(localStorage.getItem('tasks') || '[]');
+    }, 300);
+  }),
+
 const apiLoginUser = (email: string) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
