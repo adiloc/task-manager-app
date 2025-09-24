@@ -1,5 +1,20 @@
-import React, { useState } from 'react';
+import React, { lazy, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+// --- Type Definitions --- //
+interface Task {
+  id: number;
+  title: string;
+  description: string;
+  createDate: string;
+  userId: string;
+}
+
+interface User {
+  email: string;
+  fname: string;
+  lname: string;
+}
 
 const apiLoginUser = (email: string) => {
   return new Promise((resolve, reject) => {
