@@ -3,7 +3,7 @@ import { useAuth } from "../hooks/useAuth";
 import AuthForm from "./AuthForm";
 
 const Login = () => {
-  const { error, setError, navigate } = useAuth();
+  const { error, setError } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
