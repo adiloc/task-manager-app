@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import AuthForm from "./AuthForm";
+import { api } from "../api";
 
 const Login = () => {
-  const { error, setError } = useAuth();
+  const { error, setError, navigate } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -14,6 +15,13 @@ const Login = () => {
     if (!email || !password) {
       setError("Both email and password are required.");
       return;
+    }
+
+    try {
+      await api.loginUser(email);
+      navigate("/tasks");
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
