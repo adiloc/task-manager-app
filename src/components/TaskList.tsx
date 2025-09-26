@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, Task, User } from "../api";
 
@@ -24,7 +24,7 @@ const TaskList = () => {
     [],
   );
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     if (!loggedInUser) return;
     try {
       setLoading(true);
@@ -35,7 +35,7 @@ const TaskList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [loggedInUser]);
 
   useEffect(() => {
     if (!loggedInUser) {
@@ -43,7 +43,7 @@ const TaskList = () => {
     } else {
       fetchTasks();
     }
-  }, [loggedInUser, navigate]);
+  }, [loggedInUser, navigate, fetchTasks]);
 
   const filteredAndSortedTasks = useMemo(() => {
     return tasks
