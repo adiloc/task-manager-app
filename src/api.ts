@@ -15,18 +15,19 @@ export interface User {
 }
 
 export const api = {
-  
-  loginUser: (email: string): Promise<{ success: boolean, user: User }> => new Promise((resolve, reject) => {
+
+
+  registerUser: (user: object): Promise<{ success: boolean }> => new Promise((resolve, reject) => {
     setTimeout(() => {
       try {
         const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const user = users.find((u: any) => u.email === email);
-        if (user) {
-          localStorage.setItem('loggedInUser', JSON.stringify(user));
-          resolve({ success: true, user });
-        } else {
-          reject(new Error('Invalid email or password.'));
+        const existingUser = users.find((u: any) => u.email === (user as any).email);
+        if (existingUser) {
+          return reject(new Error('User with this email already exists.'));
         }
+        users.push(user);
+        localStorage.setItem('users', JSON.stringify(users));
+        resolve({ success: true });
       } catch (error) {
         reject(error);
       }
