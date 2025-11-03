@@ -5,13 +5,11 @@ import {
   fetchTasksStart,
   fetchTasksSuccess,
   fetchTasksFailure,
-  updateTask as updateTaskAction,
-  deleteTask as deleteTaskAction,
   sortTasks,
-  Task,
 } from "../features/slices/taskSlice";
-import { getTasks, updateTask, deleteTask } from "../api";
+import { getTasks } from "../api";
 import AddTaskForm from "./AddTaskForm";
+import TaskItem from "./TaskItem";
 
 const TaskList = () => {
   const dispatch: AppDispatch = useDispatch();
@@ -20,8 +18,7 @@ const TaskList = () => {
   );
   const token = useSelector((state: RootState) => state.auth.token);
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
-  const [editingTaskTitle, setEditingTaskTitle] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -39,40 +36,10 @@ const TaskList = () => {
     }
   }, [dispatch, token]);
 
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteTask(id);
-      dispatch(deleteTaskAction(id));
-    } catch (error) {
-      console.error("Failed to delete task:", error);
-    }
-  };
-
-  const handleToggleComplete = async (task: Task) => {
-    try {
-      const updatedTask = { ...task, completed: !task.completed };
-      await updateTask(updatedTask);
-      dispatch(updateTaskAction(updatedTask));
-    } catch (error) {
-      console.error("Failed to update task:", error);
-    }
-  };
-
-  const handleEdit = (task: Task) => {
-    setEditingTaskId(task.id);
-    setEditingTaskTitle(task.title);
-  };
-
-  const handleSaveEdit = async (task: Task) => {
-    try {
-      const updatedTask = { ...task, title: editingTaskTitle };
-      await updateTask(updatedTask);
-      dispatch(updateTaskAction(updatedTask));
-      setEditingTaskId(null);
-      setEditingTaskTitle("");
-    } catch (error) {
-      console.error("Failed to update task:", error);
-    }
+  const handleSort = () => {
+    const newSortOrder = sortOrder === "asc" ? "desc" : "asc";
+    setSortOrder(newSortOrder);
+    dispatch(sortTasks({ sortBy: "createdAt", order: newSortOrder }));
   };
 
   const filteredTasks = tasks.filter((task) =>
@@ -99,64 +66,16 @@ const TaskList = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <button
-          className="btn btn-secondary"
-          onClick={() => dispatch(sortTasks("createdAt"))}
-        >
-          Sort by Date
+        <button className="btn btn-secondary" onClick={handleSort}>
+          Sort by Date {sortOrder === "asc" ? "▲" : "▼"}
         </button>
       </div>
       {filteredTasks.length === 0 ? (
         <p>No tasks yet. Add one above!</p>
       ) : (
         <ul className="list-group">
-          {filteredTasks.map((task: Task) => (
-            <li
-              key={task.id}
-              className={`list-group-item d-flex justify-content-between align-items-center ${
-                task.completed ? "list-group-item-success" : ""
-              }`}
-            >
-              {editingTaskId === task.id ? (
-                <input
-                  type="text"
-                  className="form-control"
-                  value={editingTaskTitle}
-                  onChange={(e) => setEditingTaskTitle(e.target.value)}
-                />
-              ) : (
-                <span>{task.title}</span>
-              )}
-              <div>
-                {editingTaskId === task.id ? (
-                  <button
-                    className="btn btn-primary me-2"
-                    onClick={() => handleSaveEdit(task)}
-                  >
-                    Save
-                  </button>
-                ) : (
-                  <button
-                    className="btn btn-info me-2"
-                    onClick={() => handleEdit(task)}
-                  >
-                    Edit
-                  </button>
-                )}
-                <button
-                  className="btn btn-success me-2"
-                  onClick={() => handleToggleComplete(task)}
-                >
-                  {task.completed ? "Undo" : "Complete"}
-                </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => handleDelete(task.id)}
-                >
-                  Delete
-                </button>
-              </div>
-            </li>
+          {filteredTasks.map((task) => (
+            <TaskItem key={task.id} task={task} />
           ))}
         </ul>
       )}

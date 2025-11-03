@@ -51,16 +51,16 @@ const taskSlice = createSlice({
     deleteTask(state, action: PayloadAction<number>) {
       state.tasks = state.tasks.filter((task) => task.id !== action.payload);
     },
-    sortTasks(state, action: PayloadAction<keyof Task | null>) {
-      if (action.payload) {
-        const sortBy = action.payload;
-        state.tasks = [...state.tasks].sort((a, b) => {
-          if (a[sortBy] < b[sortBy]) return -1;
-          if (a[sortBy] > b[sortBy]) return 1;
-          return 0;
-        });
-        console.log("Sorted tasks:", state.tasks);
-      }
+    sortTasks(
+      state,
+      action: PayloadAction<{ sortBy: keyof Task; order: "asc" | "desc" }>,
+    ) {
+      const { sortBy, order } = action.payload;
+      state.tasks = [...state.tasks].sort((a, b) => {
+        if (a[sortBy] < b[sortBy]) return order === "asc" ? -1 : 1;
+        if (a[sortBy] > b[sortBy]) return order === "asc" ? 1 : -1;
+        return 0;
+      });
     },
   },
 });

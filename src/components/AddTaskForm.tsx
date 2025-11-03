@@ -6,6 +6,7 @@ import { RootState } from "../store";
 
 const AddTaskForm = () => {
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.token);
 
@@ -15,9 +16,10 @@ const AddTaskForm = () => {
       return;
     }
     try {
-      const newTask = await createTask({ title, description: "" }, token);
+      const newTask = await createTask({ title, description }, token);
       dispatch(addTask(newTask));
       setTitle("");
+      setDescription("");
     } catch (error) {
       console.error("Failed to create task:", error);
     }
@@ -25,18 +27,26 @@ const AddTaskForm = () => {
 
   return (
     <form onSubmit={handleSubmit} className="mb-3">
-      <div className="input-group">
+      <div className="input-group mb-2">
         <input
           type="text"
           className="form-control"
-          placeholder="New task..."
+          placeholder="New task title..."
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <button type="submit" className="btn btn-primary">
-          Add Task
-        </button>
       </div>
+      <div className="input-group mb-2">
+        <textarea
+          className="form-control"
+          placeholder="New task description..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+      <button type="submit" className="btn btn-primary">
+        Add Task
+      </button>
     </form>
   );
 };
