@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { createTask } from "../api";
 import { addTask } from "../features/slices/taskSlice";
+import { RootState } from "../store";
 
 const AddTaskForm = () => {
   const [title, setTitle] = useState("");
   const dispatch = useDispatch();
+  const token = useSelector((state: RootState) => state.auth.token);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -13,7 +15,7 @@ const AddTaskForm = () => {
       return;
     }
     try {
-      const newTask = await createTask({ title, description: "" });
+      const newTask = await createTask({ title, description: "" }, token);
       dispatch(addTask(newTask));
       setTitle("");
     } catch (error) {

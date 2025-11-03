@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { User } from "../types";
 
 const Login = () => {
-  const [formData, setFormData] = useState<Omit<User, "username">>({
+  const [formData, setFormData] = useState<Omit<User, "username" | "id">>({
     email: "",
     password: "",
   });

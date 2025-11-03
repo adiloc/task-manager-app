@@ -7,7 +7,7 @@ interface RegisterProps {
 }
 
 const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
-  const [formData, setFormData] = useState<User>({
+  const [formData, setFormData] = useState<Omit<User, "id">>({
     username: "",
     email: "",
     password: "",

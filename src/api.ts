@@ -9,7 +9,7 @@ const simulateApiCall = <T>(callback: () => T, delay = 500): Promise<T> => {
   });
 };
 
-export const register = (userData: User): Promise<void> => {
+export const register = (userData: Omit<User, "id">): Promise<void> => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       const users: User[] = JSON.parse(localStorage.getItem("users") || "[]");
@@ -20,7 +20,11 @@ export const register = (userData: User): Promise<void> => {
       if (userExists) {
         reject(new Error("User already exists"));
       } else {
-        users.push(userData);
+        const newUser: User = {
+          id: Date.now(),
+          ...userData,
+        };
+        users.push(newUser);
         localStorage.setItem("users", JSON.stringify(users));
         resolve();
       }
@@ -37,7 +41,12 @@ export const login = (userData: User): Promise<AuthResponse> => {
           user.email === userData.email && user.password === userData.password,
       );
       if (user) {
-        const token = btoa(`${user.email}:${user.password}`);
+        const tokenPayload = {
+          userId: user.id,
+          email: user.email,
+          exp: Date.now() + 1000 * 60 * 60 * 24, // 24 hours
+        };
+        const token = btoa(JSON.stringify(tokenPayload));
         resolve({ token });
       } else {
         reject(new Error("Invalid credentials"));
@@ -48,21 +57,35 @@ export const login = (userData: User): Promise<AuthResponse> => {
 
 export const getTasks = (token: string | null): Promise<Task[]> => {
   return simulateApiCall(() => {
+    if (!token) {
+      return [];
+    }
+    const tokenPayload = JSON.parse(atob(token));
+    const userId = tokenPayload.userId;
+
     const tasks: Task[] = JSON.parse(localStorage.getItem("tasks") || "[]");
-    return tasks;
+    return tasks.filter((task) => task.userId === userId);
   });
 };
 
 export const createTask = (
-  taskData: Omit<Task, "id" | "completed" | "createdAt">,
+  taskData: Omit<Task, "id" | "completed" | "createdAt" | "userId">,
+  token: string | null,
 ): Promise<Task> => {
   return simulateApiCall(() => {
+    if (!token) {
+      throw new Error("Authentication token not found.");
+    }
+    const tokenPayload = JSON.parse(atob(token));
+    const userId = tokenPayload.userId;
+
     const tasks: Task[] = JSON.parse(localStorage.getItem("tasks") || "[]");
     const newTask: Task = {
       id: Date.now(),
       ...taskData,
       completed: false,
       createdAt: Date.now(),
+      userId,
     };
     tasks.push(newTask);
     localStorage.setItem("tasks", JSON.stringify(tasks));
