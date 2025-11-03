@@ -1,4 +1,4 @@
-import { User, AuthResponse } from "./types";
+import { User } from "./types";
 import { Task } from "./features/slices/taskSlice";
 
 const simulateApiCall = <T>(callback: () => T, delay = 500): Promise<T> => {
