@@ -8,7 +8,8 @@ interface RegisterProps {
 
 const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
   const [formData, setFormData] = useState<Omit<User, "id">>({
-    username: "",
+    fname: "",
+    lname: "",
     email: "",
     password: "",
   });
@@ -34,9 +35,19 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
       <div className="mb-3">
         <input
           type="text"
-          name="username"
+          name="fname"
           className="form-control"
-          placeholder="Username"
+          placeholder="First Name"
+          onChange={handleChange}
+          required
+        />
+      </div>
+      <div className="mb-3">
+        <input
+          type="text"
+          name="lname"
+          className="form-control"
+          placeholder="Last Name"
           onChange={handleChange}
           required
         />

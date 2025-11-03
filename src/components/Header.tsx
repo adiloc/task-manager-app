@@ -5,7 +5,9 @@ import { RootState } from "../store";
 
 const Header = () => {
   const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, user } = useSelector(
+    (state: RootState) => state.auth,
+  );
 
   const handleLogout = () => {
     dispatch(logout());
@@ -15,10 +17,15 @@ const Header = () => {
     <nav className="navbar navbar-expand-lg navbar-light bg-light mb-3">
       <div className="container-fluid">
         <span className="navbar-brand">Task Manager</span>
-        {isAuthenticated && (
-          <button className="btn btn-outline-danger" onClick={handleLogout}>
-            Logout
-          </button>
+        {isAuthenticated && user && (
+          <div className="d-flex align-items-center">
+            <span className="me-3">
+              Welcome, {user.fname} {user.lname}!
+            </span>
+            <button className="btn btn-outline-danger" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
         )}
       </div>
     </nav>

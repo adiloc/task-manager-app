@@ -6,7 +6,9 @@ import { useNavigate } from "react-router-dom";
 import { User } from "../types";
 
 const Login = () => {
-  const [formData, setFormData] = useState<Omit<User, "username" | "id">>({
+  const [formData, setFormData] = useState<
+    Omit<User, "fname" | "lname" | "id">
+  >({
     email: "",
     password: "",
   });
@@ -22,7 +24,7 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await login(formData as User);
-      dispatch(loginSuccess(response.token));
+      dispatch(loginSuccess(response));
       navigate("/");
     } catch (err) {
       setError("Invalid credentials");

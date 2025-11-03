@@ -13,12 +13,9 @@ export const register = (userData: Omit<User, "id">): Promise<void> => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       const users: User[] = JSON.parse(localStorage.getItem("users") || "[]");
-      const userExists = users.find(
-        (user) =>
-          user.username === userData.username || user.email === userData.email,
-      );
+      const userExists = users.find((user) => user.email === userData.email);
       if (userExists) {
-        reject(new Error("User already exists"));
+        reject(new Error("User with this email already exists"));
       } else {
         const newUser: User = {
           id: Date.now(),
@@ -32,7 +29,9 @@ export const register = (userData: Omit<User, "id">): Promise<void> => {
   });
 };
 
-export const login = (userData: User): Promise<AuthResponse> => {
+export const login = (
+  userData: User,
+): Promise<{ token: string; user: User }> => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       const users: User[] = JSON.parse(localStorage.getItem("users") || "[]");
@@ -47,7 +46,7 @@ export const login = (userData: User): Promise<AuthResponse> => {
           exp: Date.now() + 1000 * 60 * 60 * 24, // 24 hours
         };
         const token = btoa(JSON.stringify(tokenPayload));
-        resolve({ token });
+        resolve({ token, user });
       } else {
         reject(new Error("Invalid credentials"));
       }
