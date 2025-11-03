@@ -1,180 +1,157 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { api, Task, User } from "../api";
+import { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "../store";
+import {
+  fetchTasksStart,
+  fetchTasksSuccess,
+  fetchTasksFailure,
+  updateTask as updateTaskAction,
+  deleteTask as deleteTaskAction,
+  sortTasks,
+  Task,
+} from "../features/slices/taskSlice";
+import { getTasks, updateTask, deleteTask } from "../api";
+import AddTaskForm from "./AddTaskForm";
 
-// --- TaskList Component --- //
 const TaskList = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  // Modal and form state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskDescription, setTaskDescription] = useState("");
-
-  // Search and Sort state
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-
-  const navigate = useNavigate();
-  const loggedInUser: User | null = useMemo(
-    () => JSON.parse(localStorage.getItem("loggedInUser") || "null"),
-    [],
+  const dispatch: AppDispatch = useDispatch();
+  const { tasks, loading, error } = useSelector(
+    (state: RootState) => state.tasks,
   );
-
-  const fetchTasks = useCallback(async () => {
-    if (!loggedInUser) return;
-    try {
-      setLoading(true);
-      const userTasks = await api.getTasks(loggedInUser.email);
-      setTasks(userTasks);
-    } catch (err) {
-      setError("Failed to fetch tasks.");
-    } finally {
-      setLoading(false);
-    }
-  }, [loggedInUser]);
+  const token = useSelector((state: RootState) => state.auth.token);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editingTaskTitle, setEditingTaskTitle] = useState("");
 
   useEffect(() => {
-    if (!loggedInUser) {
-      navigate("/auth");
-    } else {
+    const fetchTasks = async () => {
+      dispatch(fetchTasksStart());
+      try {
+        const response = await getTasks(token);
+        dispatch(fetchTasksSuccess(response));
+      } catch (err) {
+        dispatch(fetchTasksFailure("Failed to fetch tasks"));
+      }
+    };
+
+    if (token) {
       fetchTasks();
     }
-  }, [loggedInUser, navigate, fetchTasks]);
+  }, [dispatch, token]);
 
-  const filteredAndSortedTasks = useMemo(() => {
-    return tasks
-      .filter((task) =>
-        task.title.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-      .sort((a, b) => {
-        const dateA = new Date(a.createDate).getTime();
-        const dateB = new Date(b.createDate).getTime();
-        return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
-      });
-  }, [tasks, searchTerm, sortOrder]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("loggedInUser");
-    navigate("/auth", { state: { defaultTab: "login" } });
-  };
-
-  const openModal = (task: Task | null = null) => {
-    setEditingTask(task);
-    setTaskTitle(task ? task.title : "");
-    setTaskDescription(task ? task.description : "");
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingTask(null);
-    setTaskTitle("");
-    setTaskDescription("");
-  };
-
-  const handleSaveTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!taskTitle || !loggedInUser) return;
-
-    if (editingTask) {
-      const updatedTask = {
-        ...editingTask,
-        title: taskTitle,
-        description: taskDescription,
-      };
-      await api.updateTask(updatedTask);
-    } else {
-      const newTask = {
-        title: taskTitle,
-        description: taskDescription,
-        createDate: new Date().toISOString(),
-        userId: loggedInUser.email,
-      };
-      await api.addTask(newTask);
-    }
-    await fetchTasks();
-    closeModal();
-  };
-
-  const handleDeleteTask = async (taskId: number) => {
-    if (window.confirm("Are you sure you want to delete this task?")) {
-      await api.deleteTask(taskId);
-      await fetchTasks();
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteTask(id);
+      dispatch(deleteTaskAction(id));
+    } catch (error) {
+      console.error("Failed to delete task:", error);
     }
   };
 
-  const toggleSortOrder = () => {
-    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+  const handleToggleComplete = async (task: Task) => {
+    try {
+      const updatedTask = { ...task, completed: !task.completed };
+      await updateTask(updatedTask);
+      dispatch(updateTaskAction(updatedTask));
+    } catch (error) {
+      console.error("Failed to update task:", error);
+    }
   };
 
-  if (!loggedInUser) return null;
+  const handleEdit = (task: Task) => {
+    setEditingTaskId(task.id);
+    setEditingTaskTitle(task.title);
+  };
+
+  const handleSaveEdit = async (task: Task) => {
+    try {
+      const updatedTask = { ...task, title: editingTaskTitle };
+      await updateTask(updatedTask);
+      dispatch(updateTaskAction(updatedTask));
+      setEditingTaskId(null);
+      setEditingTaskTitle("");
+    } catch (error) {
+      console.error("Failed to update task:", error);
+    }
+  };
+
+  const filteredTasks = tasks.filter((task) =>
+    task.title.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Welcome, {loggedInUser.fname}!</h2>
-        <button onClick={handleLogout} className="btn btn-secondary">
-          Logout
+      <h2>Tasks</h2>
+      <AddTaskForm />
+      <div className="d-flex justify-content-between mb-3">
+        <input
+          type="text"
+          className="form-control me-2"
+          placeholder="Search by title..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <button
+          className="btn btn-secondary"
+          onClick={() => dispatch(sortTasks("createdAt"))}
+        >
+          Sort by Date
         </button>
       </div>
-
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <button onClick={() => openModal()} className="btn btn-primary">
-          Add Task
-        </button>
-        <div className="d-flex align-items-center">
-          <input
-            type="text"
-            className="form-control me-2"
-            placeholder="Search by title..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button
-            onClick={toggleSortOrder}
-            className="btn btn-outline-secondary"
-          >
-            Sort by Date ({sortOrder === "asc" ? "Oldest" : "Newest"})
-          </button>
-        </div>
-      </div>
-
-      {loading && <p>Loading tasks...</p>}
-      {error && <p className="text-danger">{error}</p>}
-
-      {!loading && filteredAndSortedTasks.length === 0 ? (
-        <p>
-          No tasks found. Get started by adding a new one or clear your search
-          filter!
-        </p>
+      {filteredTasks.length === 0 ? (
+        <p>No tasks yet. Add one above!</p>
       ) : (
         <ul className="list-group">
-          {filteredAndSortedTasks.map((task) => (
+          {filteredTasks.map((task: Task) => (
             <li
               key={task.id}
-              className="list-group-item d-flex justify-content-between align-items-center"
+              className={`list-group-item d-flex justify-content-between align-items-center ${
+                task.completed ? "list-group-item-success" : ""
+              }`}
             >
+              {editingTaskId === task.id ? (
+                <input
+                  type="text"
+                  className="form-control"
+                  value={editingTaskTitle}
+                  onChange={(e) => setEditingTaskTitle(e.target.value)}
+                />
+              ) : (
+                <span>{task.title}</span>
+              )}
               <div>
-                <h5>{task.title}</h5>
-                <p className="mb-1">{task.description}</p>
-                <small>
-                  Created: {new Date(task.createDate).toLocaleDateString()}
-                </small>
-              </div>
-              <div>
+                {editingTaskId === task.id ? (
+                  <button
+                    className="btn btn-primary me-2"
+                    onClick={() => handleSaveEdit(task)}
+                  >
+                    Save
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-info me-2"
+                    onClick={() => handleEdit(task)}
+                  >
+                    Edit
+                  </button>
+                )}
                 <button
-                  onClick={() => openModal(task)}
-                  className="btn btn-sm btn-outline-primary me-2"
+                  className="btn btn-success me-2"
+                  onClick={() => handleToggleComplete(task)}
                 >
-                  Edit
+                  {task.completed ? "Undo" : "Complete"}
                 </button>
                 <button
-                  onClick={() => handleDeleteTask(task.id)}
-                  className="btn btn-sm btn-outline-danger"
+                  className="btn btn-danger"
+                  onClick={() => handleDelete(task.id)}
                 >
                   Delete
                 </button>
@@ -183,71 +160,6 @@ const TaskList = () => {
           ))}
         </ul>
       )}
-
-      {/* Modal */}
-      {isModalOpen && (
-        <div
-          className="modal show fade"
-          style={{ display: "block" }}
-          tabIndex={-1}
-        >
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <form onSubmit={handleSaveTask}>
-                <div className="modal-header">
-                  <h5 className="modal-title">
-                    {editingTask ? "Edit Task" : "Add Task"}
-                  </h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={closeModal}
-                  ></button>
-                </div>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label htmlFor="taskTitle" className="form-label">
-                      Title
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="taskTitle"
-                      value={taskTitle}
-                      onChange={(e) => setTaskTitle(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="taskDescription" className="form-label">
-                      Description
-                    </label>
-                    <textarea
-                      className="form-control"
-                      id="taskDescription"
-                      value={taskDescription}
-                      onChange={(e) => setTaskDescription(e.target.value)}
-                    ></textarea>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={closeModal}
-                  >
-                    Close
-                  </button>
-                  <button type="submit" className="btn btn-primary">
-                    Save changes
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-      {isModalOpen && <div className="modal-backdrop fade show"></div>}
     </div>
   );
 };

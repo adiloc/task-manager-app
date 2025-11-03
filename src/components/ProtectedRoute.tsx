@@ -1,12 +1,18 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import React from "react";
+import { useSelector } from "react-redux";
+import { Navigate } from "react-router-dom";
+import { RootState } from "../store";
 
-const ProtectedRoute = () => {
-  const isAuthenticated = () => {
-    return localStorage.getItem('loggedInUser') !== null;
-  };
+interface ProtectedRouteProps {
+  element: React.ReactElement;
+}
 
-  return isAuthenticated() ? <Outlet /> : <Navigate to="/login" />;
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element }) => {
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated,
+  );
+
+  return isAuthenticated ? element : <Navigate to="/login" />;
 };
 
 export default ProtectedRoute;

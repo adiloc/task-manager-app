@@ -1,76 +1,70 @@
 import React, { useState } from "react";
-import { useAuth } from "../hooks/useAuth";
-import AuthForm from "./AuthForm";
-import { api } from "../api";
+import { register } from "../api";
+import { User } from "../types";
 
-const Register = ({ onRegisterSuccess }: { onRegisterSuccess: () => void }) => {
-  const { error, setError } = useAuth();
-  const [fname, setFname] = useState("");
-  const [lname, setLname] = useState("");
-  const [email, setEmail] = useState("");
+interface RegisterProps {
+  onRegisterSuccess: () => void;
+}
 
-  const validateEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
+  const [formData, setFormData] = useState<User>({
+    username: "",
+    email: "",
+    password: "",
+  });
+  const [error, setError] = useState("");
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    if (!fname || !lname || !email) {
-      setError("All fields are required.");
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-
     try {
-      await api.registerUser({ fname, lname, email });
+      await register(formData);
       onRegisterSuccess();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError("Failed to register");
     }
   };
 
   return (
-    <AuthForm handleSubmit={handleSubmit} error={error}>
-      <div className="form-group mb-3">
-        <label htmlFor="fname">First Name</label>
+    <form onSubmit={handleSubmit}>
+      {error && <div className="alert alert-danger">{error}</div>}
+      <div className="mb-3">
         <input
           type="text"
+          name="username"
           className="form-control"
-          id="fname"
-          value={fname}
-          onChange={(e) => setFname(e.target.value)}
+          placeholder="Username"
+          onChange={handleChange}
+          required
         />
       </div>
-      <div className="form-group mb-3">
-        <label htmlFor="lname">Last Name</label>
-        <input
-          type="text"
-          className="form-control"
-          id="lname"
-          value={lname}
-          onChange={(e) => setLname(e.target.value)}
-        />
-      </div>
-      <div className="form-group mb-3">
-        <label htmlFor="email">Email address</label>
+      <div className="mb-3">
         <input
           type="email"
+          name="email"
           className="form-control"
-          id="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          onChange={handleChange}
+          required
+        />
+      </div>
+      <div className="mb-3">
+        <input
+          type="password"
+          name="password"
+          className="form-control"
+          placeholder="Password"
+          onChange={handleChange}
+          required
         />
       </div>
       <button type="submit" className="btn btn-primary">
         Register
       </button>
-    </AuthForm>
+    </form>
   );
 };
 
